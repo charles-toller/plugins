@@ -75,7 +75,15 @@ static FlutterError *getFlutterError(NSError *error) {
     } else {
       NSString *path = [[NSBundle mainBundle] pathForResource:@"GoogleService-Info"
                                                        ofType:@"plist"];
-      if (path) {
+      // Use clientId and serverClientId if provided, falling back to GoogleService-Info.plist
+      // If neither are available, throws an error
+      if ([call.arguments[@"clientId"] length] != 0) {
+        [GIDSignIn sharedInstance].clientID = call.arguments[@"clientId"];
+        [GIDSignIn sharedInstance].serverClientID = call.arguments[@"clientId"];
+        [GIDSignIn sharedInstance].scopes = call.arguments[@"scopes"];
+        [GIDSignIn sharedInstance].hostedDomain = call.arguments[@"hostedDomain"];
+        result(nil);
+      } else if (path) {
         NSMutableDictionary *plist = [[NSMutableDictionary alloc] initWithContentsOfFile:path];
         [GIDSignIn sharedInstance].clientID = plist[kClientIdKey];
         [GIDSignIn sharedInstance].serverClientID = plist[kServerClientIdKey];
@@ -84,7 +92,7 @@ static FlutterError *getFlutterError(NSError *error) {
         result(nil);
       } else {
         result([FlutterError errorWithCode:@"missing-config"
-                                   message:@"GoogleService-Info.plist file not found"
+                                   message:@"GoogleService-Info.plist file not found and clientId/serverClientId not set"
                                    details:nil]);
       }
     }
